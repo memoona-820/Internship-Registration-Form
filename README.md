@@ -1,106 +1,181 @@
-# InternHub — Internship Registration Portal
+# InternHub v2.0 — Internship Management System
 
-A full-stack MERN (MongoDB, Express, React, Node.js) application for managing internship applications. Applicants can register through a public form, and admins can log in to a protected dashboard to review applications, update statuses, and manage available internship programs.
+> **Upgraded from Week 1 Registration Portal → Full Management System**
 
-## Features
+A MERN stack application for managing internship applications end-to-end — from public registration to admin review, editing, deletion, and search.
 
-- **Public registration form** — applicants submit name, father's name, email, phone, CNIC, and choose a technology track
-- **Admin authentication** — secure login using JWT tokens and hashed passwords (bcrypt)
-- **Admin dashboard** — view all applicants, update status (pending / approved / rejected), and delete records
-- **Dynamic program management** — admins can add, edit, or deactivate internship tracks, which automatically update on the public registration form
-- **Data persistence** — all data stored in MongoDB
+---
 
-## Tech Stack
+## 🆕 What's New in v2.0
 
-| Layer    | Technology              |
-|----------|--------------------------|
-| Frontend | React, React Router      |
-| Backend  | Node.js, Express          |
-| Database | MongoDB, Mongoose         |
-| Auth     | JWT, bcrypt.js             |
+| Feature | v1 (Registration) | v2 (Management) |
+|---|---|---|
+| Submit applications | ✅ | ✅ |
+| View all applicants | ✅ Admin only | ✅ Improved table |
+| **Edit records** | ❌ | ✅ Full edit modal |
+| **Delete records** | ✅ Basic | ✅ With confirm dialog |
+| **Search applicants** | ❌ | ✅ Live search |
+| **Filter by status/program** | ❌ | ✅ Multi-filter |
+| **Stats dashboard** | ❌ | ✅ 4 stat cards |
+| **Improved UI** | Basic | ✅ Professional design |
+| Form validation | Basic | ✅ Enhanced |
 
-## Project Structure
+---
 
-internship-app/
+## ✨ Features
+
+- 🌐 **Public Registration Form** — applicants submit name, father's name, email, phone, CNIC, program, qualification, institution
+- 🔐 **Admin Authentication** — JWT + bcrypt login
+- 📊 **Admin Dashboard** — stats overview (total, pending, approved, rejected)
+- ✏️ **Edit Records** — update any applicant's details via a modal
+- 🗑️ **Delete Records** — with confirmation dialog to prevent accidents
+- 🔍 **Live Search** — search by name, email, CNIC, phone, institution
+- 🎛️ **Filters** — filter by status (pending/approved/rejected) and program
+- 🔄 **Status Management** — change status inline from the table
+- 🗂️ **Manage Programs** — add, edit, activate/deactivate internship tracks
+- 📱 **Responsive Design** — works on mobile and desktop
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, React Router v6 |
+| Backend | Node.js, Express.js |
+| Database | MongoDB, Mongoose |
+| Auth | JWT, bcrypt.js |
+| Notifications | react-hot-toast |
+
+---
+
+## 📁 Project Structure
+
+```
+internship-management/
 ├── backend/
-│   ├── models/        # Mongoose schemas (Internship, Admin, Program)
-│   ├── routes/        # Express API routes
-│   ├── middleware/     # JWT auth middleware
-│   ├── server.js       # App entry point
-│   └── package.json
+│   ├── models/
+│   │   ├── Internship.js   # Application schema (+ qualification, institution fields)
+│   │   ├── Admin.js        # Admin with bcrypt
+│   │   └── Program.js      # Internship tracks
+│   ├── routes/
+│   │   ├── internships.js  # Full CRUD + search/filter
+│   │   ├── admin.js        # Login & register
+│   │   └── programs.js     # Program management
+│   ├── middleware/
+│   │   └── auth.js         # JWT middleware
+│   ├── .env.example
+│   ├── package.json
+│   └── server.js
 └── frontend/
     ├── public/
-    ├── src/
-    │   ├── components/ # Reusable UI components
-    │   ├── pages/       # Page-level components (Home, AdminLogin, AdminDashboard, ManagePrograms)
-    │   ├── api.js        # Axios API client
-    │   └── App.js
-    └── package.json
+    │   └── index.html
+    └── src/
+        ├── components/
+        │   ├── Navbar.js       # Sticky nav with auth state
+        │   ├── EditModal.js    # ✨ NEW: Edit applicant modal
+        │   └── ConfirmModal.js # ✨ NEW: Delete confirmation
+        ├── pages/
+        │   ├── Home.js             # Public registration form
+        │   ├── AdminLogin.js       # Login page
+        │   ├── AdminDashboard.js   # ✨ UPGRADED: Main management
+        │   └── ManagePrograms.js   # Program CRUD
+        ├── styles/
+        │   └── main.css        # ✨ Fully redesigned
+        ├── api.js              # Axios client
+        ├── App.js
+        └── index.js
+```
 
-## Getting Started
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
+- Node.js v18+
+- MongoDB Community Server running locally
 
-- Node.js (v18 or higher)
-- MongoDB Community Server
-
-### 1. Clone the repository
-
-git clone <your-repo-url>
-cd internship-app
+### 1. Clone & navigate
+```bash
+git clone https://github.com/memoona-820/Internship-Registration-Form.git
+cd Internship-Registration-Form
+```
 
 ### 2. Backend setup
-
+```bash
 cd backend
 npm install
-
-Create a `.env` file inside the `backend` folder with the following:
-
-MONGO_URI=mongodb://localhost:27017/internship_db
-PORT=5000
-JWT_SECRET=your_secret_key_here
-
-Start the backend server:
-
+cp .env.example .env
+# Edit .env and set your MONGO_URI and JWT_SECRET
 npm start
+```
 
 You should see:
+```
 ✅ MongoDB connected successfully
 🚀 Server running on http://localhost:5000
+```
 
 ### 3. Frontend setup
-
-In a new terminal:
-
+```bash
 cd frontend
 npm install
 npm start
+```
+App opens at **http://localhost:3000**
 
-The app will open automatically at http://localhost:3000.
+### 4. Create admin account (one-time)
+```bash
+curl -X POST http://localhost:5000/api/admin/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"yourpassword"}'
+```
 
-### 4. Create the first admin account
+Then login at **http://localhost:3000/admin/login**
 
-With the backend running, send a one-time request to create an admin account:
+---
 
-curl -X POST http://localhost:5000/api/admin/register -H "Content-Type: application/json" -d "{\"username\":\"admin\",\"password\":\"yourpassword\"}"
+## 🔌 API Endpoints
 
-Then log in at http://localhost:3000/admin/login.
+### Internships
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | /api/internships | Public | Submit application |
+| GET | /api/internships | Admin | Get all (supports `?search=&status=&program=`) |
+| GET | /api/internships/:id | Admin | Get single applicant |
+| PUT | /api/internships/:id | Admin | **NEW** Full update/edit |
+| PATCH | /api/internships/:id/status | Admin | Update status only |
+| DELETE | /api/internships/:id | Admin | Delete record |
 
-## API Endpoints
+### Admin
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | /api/admin/register | Public | One-time admin creation |
+| POST | /api/admin/login | Public | Get JWT token |
 
-| Method | Endpoint                       | Access | Description                       |
-|--------|---------------------------------|--------|-------------------------------------|
-| POST   | /api/internships              | Public | Submit a new application           |
-| GET    | /api/internships              | Admin  | Get all applicants                  |
-| PATCH  | /api/internships/:id/status   | Admin  | Update applicant status             |
-| DELETE | /api/internships/:id          | Admin  | Delete an applicant record          |
-| POST   | /api/admin/login              | Public | Admin login                         |
-| GET    | /api/programs                 | Public | List active programs                |
-| GET    | /api/programs/all             | Admin  | List all programs                   |
-| POST   | /api/programs                 | Admin  | Add a new program                   |
-| PATCH  | /api/programs/:id              | Admin  | Edit a program                       |
-| DELETE | /api/programs/:id              | Admin  | Delete a program                     |
+### Programs
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | /api/programs | Public | Active programs |
+| GET | /api/programs/all | Admin | All programs |
+| POST | /api/programs | Admin | Add program |
+| PATCH | /api/programs/:id | Admin | Edit/toggle program |
+| DELETE | /api/programs/:id | Admin | Delete program |
 
-## License
+---
 
-This project was built for educational/internship purposes.
+## 📸 Screenshots
+
+| Page | Description |
+|---|---|
+| `/` | Public registration form with validation |
+| `/admin/login` | Admin login page |
+| `/admin/dashboard` | Stats + searchable applicant table with edit/delete |
+| `/admin/programs` | Program management |
+
+---
+
+## 👩‍💻 Developer
+
+**Memoona** — Internship Task Week 2 Submission  
+Built with ❤️ using MERN Stack

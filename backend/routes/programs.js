@@ -1,93 +1,57 @@
 const express = require('express');
 const router = express.Router();
 const Program = require('../models/Program');
-const { protect } = require('../middleware/auth');
+const protect = require('../middleware/auth');
 
-// GET /api/programs — Public: list active programs (for registration form dropdown)
+// Public: active programs
 router.get('/', async (req, res) => {
   try {
-    const programs = await Program.find({ isActive: true }).sort({ name: 1 });
-    res.status(200).json({ success: true, data: programs });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    const programs = await Program.find({ isActive: true });
+    res.json(programs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
-// GET /api/programs/all — Admin: list ALL programs including inactive
+// Admin: all programs
 router.get('/all', protect, async (req, res) => {
   try {
     const programs = await Program.find().sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: programs });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    res.json(programs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
-// POST /api/programs — Admin: create a new program
+// Admin: add program
 router.post('/', protect, async (req, res) => {
   try {
-    const { name, description } = req.body;
-
-    if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, message: 'Program name is required.' });
-    }
-
-    const existing = await Program.findOne({ name: name.trim() });
-    if (existing) {
-      return res.status(409).json({ success: false, message: 'A program with this name already exists.' });
-    }
-
-    const program = new Program({ name: name.trim(), description: description?.trim() || '' });
-    const saved = await program.save();
-
-    res.status(201).json({ success: true, message: 'Program added successfully!', data: saved });
-  } catch (error) {
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      return res.status(400).json({ success: false, message: messages[0] });
-    }
-    res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    const program = new Program(req.body);
+    await program.save();
+    res.status(201).json(program);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 
-// PATCH /api/programs/:id — Admin: edit a program (name, description, active status)
+// Admin: update program
 router.patch('/:id', protect, async (req, res) => {
   try {
-    const { name, description, isActive } = req.body;
-    const update = {};
-    if (name !== undefined) update.name = name.trim();
-    if (description !== undefined) update.description = description.trim();
-    if (isActive !== undefined) update.isActive = isActive;
-
-    const updated = await Program.findByIdAndUpdate(req.params.id, update, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updated) {
-      return res.status(404).json({ success: false, message: 'Program not found.' });
-    }
-
-    res.status(200).json({ success: true, message: 'Program updated successfully.', data: updated });
-  } catch (error) {
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      return res.status(400).json({ success: false, message: messages[0] });
-    }
-    res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    const updated = await Program.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ message: 'Program not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 
-// DELETE /api/programs/:id — Admin: delete a program
+// Admin: delete program
 router.delete('/:id', protect, async (req, res) => {
   try {
-    const deleted = await Program.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ success: false, message: 'Program not found.' });
-    }
-    res.status(200).json({ success: true, message: 'Program deleted successfully.' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    await Program.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Program deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 
