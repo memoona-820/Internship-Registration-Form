@@ -73,9 +73,9 @@ export default function MyRecord() {
   };
 
   const STATUS_STYLE = {
-    pending: { background: '#fff8e1', color: '#f39c12' },
-    approved: { background: '#e8fff5', color: '#27ae60' },
-    rejected: { background: '#ffe8ea', color: '#ff4757' },
+    pending: { background: 'var(--warning-bg)', color: 'var(--warning)' },
+    approved: { background: 'var(--success-bg)', color: 'var(--success)' },
+    rejected: { background: 'var(--danger-bg)', color: 'var(--danger)' },
   };
 
   // ── DELETED ──
@@ -180,7 +180,7 @@ export default function MyRecord() {
                 { label: 'Qualification', value: record.qualification },
                 { label: 'Institution', value: record.institution },
               ].map(({ label, value }) => (
-                <div key={label} style={{ background: '#f8f9fc', padding: '12px 16px', borderRadius: 10 }}>
+                <div key={label} style={{ background: 'var(--surface-alt)', padding: '12px 16px', borderRadius: 10 }}>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>{label}</div>
                   <div style={{ fontWeight: 600 }}>{value}</div>
                 </div>
@@ -256,11 +256,11 @@ export default function MyRecord() {
                 {/* Read-only fields */}
                 <div className="form-group">
                   <label className="form-label">Email (read-only)</label>
-                  <input className="form-control" value={record.email} disabled style={{ background: '#f4f6fb', color: 'var(--text-muted)' }} />
+                  <input className="form-control" value={record.email} disabled style={{ background: 'var(--input-disabled-bg)', color: 'var(--text-muted)' }} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">CNIC (read-only)</label>
-                  <input className="form-control" value={record.cnic} disabled style={{ background: '#f4f6fb', color: 'var(--text-muted)' }} />
+                  <input className="form-control" value={record.cnic} disabled style={{ background: 'var(--input-disabled-bg)', color: 'var(--text-muted)' }} />
                 </div>
               </div>
             </div>

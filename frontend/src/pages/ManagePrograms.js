@@ -160,7 +160,7 @@ export default function ManagePrograms() {
                     <td style={{ fontWeight: 600 }}>{p.name}</td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>{p.description || '—'}</td>
                     <td>
-                      <span style={{ background: '#f4f6fb', padding: '3px 10px', borderRadius: 12, fontSize: '0.82rem' }}>
+                      <span style={{ background: 'var(--surface-alt)', padding: '3px 10px', borderRadius: 12, fontSize: '0.82rem' }}>
                         🕐 {p.duration}
                       </span>
                     </td>
@@ -174,7 +174,7 @@ export default function ManagePrograms() {
                         <button className="btn-icon btn-icon-edit" onClick={() => handleEdit(p)} title="Edit">✏️</button>
                         <button
                           className="btn-icon"
-                          style={{ background: p.isActive ? '#fff8e1' : '#e8fff5', color: p.isActive ? '#f39c12' : '#27ae60' }}
+                          style={{ background: p.isActive ? 'var(--warning-bg)' : 'var(--success-bg)', color: p.isActive ? 'var(--warning)' : 'var(--success)' }}
                           onClick={() => handleToggle(p)}
                           title={p.isActive ? 'Deactivate' : 'Activate'}
                         >

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ export default function Navbar() {
             Admin Login
           </NavLink>
         )}
+        <ThemeToggle />
       </div>
     </nav>
   );

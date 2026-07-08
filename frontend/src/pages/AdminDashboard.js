@@ -3,8 +3,30 @@ import api from '../api';
 import toast from 'react-hot-toast';
 import EditModal from '../components/EditModal';
 import ConfirmModal from '../components/ConfirmModal';
+import DashboardCharts from '../components/DashboardCharts';
 
 const STATUS_COLORS = { pending: 'badge-pending', approved: 'badge-approved', rejected: 'badge-rejected' };
+
+function downloadCSV(rows, filename) {
+  const headers = ['Name', 'Father Name', 'Email', 'Phone', 'CNIC', 'Program', 'Qualification', 'Institution', 'Status', 'Applied On'];
+  const escape = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+  const lines = [
+    headers.join(','),
+    ...rows.map(r => [
+      r.name, r.fatherName, r.email, r.phone, r.cnic, r.program,
+      r.qualification, r.institution, r.status, new Date(r.createdAt).toLocaleDateString()
+    ].map(escape).join(','))
+  ];
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export default function AdminDashboard() {
   const [applicants, setApplicants] = useState([]);
@@ -14,36 +36,129 @@ export default function AdminDashboard() {
   const [programFilter, setProgramFilter] = useState('all');
   const [programs, setPrograms] = useState([]);
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [editItem, setEditItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
 
   const fetchApplicants = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { page, limit: pageSize };
       if (search) params.search = search;
       if (statusFilter !== 'all') params.status = statusFilter;
       if (programFilter !== 'all') params.program = programFilter;
       const res = await api.get('/internships', { params });
-      setApplicants(res.data);
+      setApplicants(res.data.data);
+      setTotalPages(res.data.pages);
+      setTotalCount(res.data.total);
+      if (res.data.page !== page) setPage(res.data.page);
     } catch {
       toast.error('Failed to load applicants');
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, programFilter]);
+  }, [search, statusFilter, programFilter, page, pageSize]);
 
   useEffect(() => { fetchApplicants(); }, [fetchApplicants]);
+
+  // Reset to page 1 whenever filters change
+  useEffect(() => { setPage(1); }, [search, statusFilter, programFilter]);
+
+  // Clear selection whenever the visible list changes (new page, filter, or refresh)
+  useEffect(() => { setSelectedIds([]); }, [applicants]);
+
+  const toggleSelectOne = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(prev => prev.length === applicants.length ? [] : applicants.map(a => a._id));
+  };
+
+  const handleBulkStatus = async (status) => {
+    if (selectedIds.length === 0) return;
+    setBulkActing(true);
+    try {
+      const res = await api.patch('/internships/bulk/status', { ids: selectedIds, status });
+      toast.success(res.data.message || 'Updated');
+      setSelectedIds([]);
+      fetchApplicants();
+      fetchStats();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Bulk update failed');
+    } finally {
+      setBulkActing(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkActing(true);
+    try {
+      const res = await api.post('/internships/bulk/delete', { ids: selectedIds });
+      toast.success(res.data.message || 'Deleted');
+      setSelectedIds([]);
+      setBulkDeleteConfirm(false);
+      fetchApplicants();
+      fetchStats();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Bulk delete failed');
+    } finally {
+      setBulkActing(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const params = { exportAll: 'true' };
+      if (search) params.search = search;
+      if (statusFilter !== 'all') params.status = statusFilter;
+      if (programFilter !== 'all') params.program = programFilter;
+      const res = await api.get('/internships', { params });
+      if (!res.data.data.length) {
+        toast.error('No records to export');
+        return;
+      }
+      downloadCSV(res.data.data, `applicants-${new Date().toISOString().slice(0, 10)}.csv`);
+      toast.success(`Exported ${res.data.data.length} record(s)`);
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0, byProgram: [], trend: [] });
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [exporting, setExporting] = useState(false);
+  const [bulkActing, setBulkActing] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await api.get('/internships/stats/summary');
+      setStats(res.data);
+    } catch {
+      // Non-critical, silently ignore
+    }
+  }, []);
 
   useEffect(() => {
     api.get('/programs').then(res => setPrograms(res.data)).catch(() => {});
   }, []);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   const handleStatusChange = async (id, status) => {
     try {
       await api.patch(`/internships/${id}/status`, { status });
       toast.success(`Status updated to ${status}`);
       fetchApplicants();
+      fetchStats();
     } catch {
       toast.error('Failed to update status');
     }
@@ -55,6 +170,7 @@ export default function AdminDashboard() {
       toast.success('Record deleted');
       setDeleteId(null);
       fetchApplicants();
+      fetchStats();
     } catch {
       toast.error('Failed to delete');
     }
@@ -66,16 +182,10 @@ export default function AdminDashboard() {
       toast.success('Record updated successfully!');
       setEditItem(null);
       fetchApplicants();
+      fetchStats();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Update failed');
     }
-  };
-
-  const stats = {
-    total: applicants.length,
-    pending: applicants.filter(a => a.status === 'pending').length,
-    approved: applicants.filter(a => a.status === 'approved').length,
-    rejected: applicants.filter(a => a.status === 'rejected').length,
   };
 
   return (
@@ -103,6 +213,8 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      <DashboardCharts stats={stats} />
+
       {/* Table Card */}
       <div className="card">
         <div className="card-header">
@@ -129,8 +241,24 @@ export default function AdminDashboard() {
             <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(''); setStatusFilter('all'); setProgramFilter('all'); }}>
               Reset
             </button>
+            <button className="btn btn-secondary btn-sm" onClick={handleExport} disabled={exporting}>
+              {exporting ? '⏳ Exporting...' : '⬇️ Export CSV'}
+            </button>
           </div>
         </div>
+
+        {selectedIds.length > 0 && (
+          <div className="bulk-toolbar">
+            <span>{selectedIds.length} selected</span>
+            <div className="bulk-toolbar-actions">
+              <button className="btn btn-sm bulk-btn approve" disabled={bulkActing} onClick={() => handleBulkStatus('approved')}>✅ Approve</button>
+              <button className="btn btn-sm bulk-btn reject" disabled={bulkActing} onClick={() => handleBulkStatus('rejected')}>❌ Reject</button>
+              <button className="btn btn-sm bulk-btn pending" disabled={bulkActing} onClick={() => handleBulkStatus('pending')}>⏳ Mark Pending</button>
+              <button className="btn btn-sm bulk-btn delete" disabled={bulkActing} onClick={() => setBulkDeleteConfirm(true)}>🗑️ Delete</button>
+              <button className="btn btn-sm btn-secondary" onClick={() => setSelectedIds([])}>Clear</button>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="empty-state">
@@ -149,6 +277,13 @@ export default function AdminDashboard() {
               <table>
                 <thead>
                   <tr>
+                    <th style={{ width: 36 }}>
+                      <input
+                        type="checkbox"
+                        checked={applicants.length > 0 && selectedIds.length === applicants.length}
+                        onChange={toggleSelectAll}
+                      />
+                    </th>
                     <th>#</th>
                     <th>Name</th>
                     <th>Email</th>
@@ -162,7 +297,14 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {applicants.map((a, i) => (
-                    <tr key={a._id}>
+                    <tr key={a._id} className={selectedIds.includes(a._id) ? 'row-selected' : ''}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(a._id)}
+                          onChange={() => toggleSelectOne(a._id)}
+                        />
+                      </td>
                       <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{i + 1}</td>
                       <td>
                         <div style={{ fontWeight: 600 }}>{a.name}</div>
@@ -214,7 +356,45 @@ export default function AdminDashboard() {
               </table>
             </div>
             <div className="pagination">
-              <span>Showing {applicants.length} result{applicants.length !== 1 ? 's' : ''}</span>
+              <span>
+                Showing {applicants.length === 0 ? 0 : (page - 1) * pageSize + 1}
+                –{Math.min(page * pageSize, totalCount)} of {totalCount} result{totalCount !== 1 ? 's' : ''}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <select
+                  className="page-size-select"
+                  value={pageSize}
+                  onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+                >
+                  {[5, 10, 20, 50].map(n => <option key={n} value={n}>{n} / page</option>)}
+                </select>
+                <div className="pagination-controls">
+                  <button className="page-btn" disabled={page <= 1} onClick={() => setPage(1)}>«</button>
+                  <button className="page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹</button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                    .reduce((acc, p, idx, arr) => {
+                      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, idx) =>
+                      p === '...' ? (
+                        <span key={`ellipsis-${idx}`} className="page-ellipsis">…</span>
+                      ) : (
+                        <button
+                          key={p}
+                          className={`page-btn ${p === page ? 'active' : ''}`}
+                          onClick={() => setPage(p)}
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+                  <button className="page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>›</button>
+                  <button className="page-btn" disabled={page >= totalPages} onClick={() => setPage(totalPages)}>»</button>
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -237,6 +417,16 @@ export default function AdminDashboard() {
           message="This action cannot be undone. The applicant's record will be permanently removed."
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
+        />
+      )}
+
+      {/* Bulk Delete Confirm */}
+      {bulkDeleteConfirm && (
+        <ConfirmModal
+          title={`Delete ${selectedIds.length} Record(s)?`}
+          message="This action cannot be undone. All selected applicant records will be permanently removed."
+          onConfirm={handleBulkDelete}
+          onCancel={() => setBulkDeleteConfirm(false)}
         />
       )}
     </div>

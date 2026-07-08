@@ -58,10 +58,76 @@ router.delete('/my/:id', async (req, res) => {
   }
 });
 
-// Admin: Get all applicants with search & filter
+// Admin: Get status summary counts, program breakdown & 14-day trend (independent of pagination)
+router.get('/stats/summary', protect, async (req, res) => {
+  try {
+    const [total, pending, approved, rejected] = await Promise.all([
+      Internship.countDocuments({}),
+      Internship.countDocuments({ status: 'pending' }),
+      Internship.countDocuments({ status: 'approved' }),
+      Internship.countDocuments({ status: 'rejected' }),
+    ]);
+
+    const byProgramAgg = await Internship.aggregate([
+      { $group: { _id: '$program', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    const byProgram = byProgramAgg.map(p => ({ program: p._id || 'Unspecified', count: p.count }));
+
+    const since = new Date();
+    since.setDate(since.getDate() - 13);
+    since.setHours(0, 0, 0, 0);
+    const trendAgg = await Internship.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 } } }
+    ]);
+    const trendMap = Object.fromEntries(trendAgg.map(t => [t._id, t.count]));
+    const trend = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      trend.push({ date: key, count: trendMap[key] || 0 });
+    }
+
+    res.json({ total, pending, approved, rejected, byProgram, trend });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Admin: Bulk update status for multiple records
+router.patch('/bulk/status', protect, async (req, res) => {
+  try {
+    const { ids, status } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'No records selected' });
+    if (!['pending', 'approved', 'rejected'].includes(status)) return res.status(400).json({ message: 'Invalid status' });
+    const result = await Internship.updateMany({ _id: { $in: ids } }, { status });
+    res.json({ message: `${result.modifiedCount} record(s) updated`, modifiedCount: result.modifiedCount });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Admin: Bulk delete multiple records
+router.post('/bulk/delete', protect, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'No records selected' });
+    const result = await Internship.deleteMany({ _id: { $in: ids } });
+    res.json({ message: `${result.deletedCount} record(s) deleted`, deletedCount: result.deletedCount });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Admin: Get all applicants with search, filter & pagination
 router.get('/', protect, async (req, res) => {
   try {
-    const { search, status, program } = req.query;
+    const { search, status, program, exportAll } = req.query;
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 100);
+
     let query = {};
     if (search) {
       query.$or = [
@@ -74,8 +140,23 @@ router.get('/', protect, async (req, res) => {
     }
     if (status && status !== 'all') query.status = status;
     if (program && program !== 'all') query.program = program;
-    const internships = await Internship.find(query).sort({ createdAt: -1 });
-    res.json(internships);
+
+    const total = await Internship.countDocuments(query);
+
+    if (exportAll === 'true') {
+      const all = await Internship.find(query).sort({ createdAt: -1 });
+      return res.json({ data: all, total, page: 1, pages: 1, limit: total });
+    }
+
+    const pages = Math.max(Math.ceil(total / limit), 1);
+    const safePage = Math.min(page, pages);
+
+    const internships = await Internship.find(query)
+      .sort({ createdAt: -1 })
+      .skip((safePage - 1) * limit)
+      .limit(limit);
+
+    res.json({ data: internships, total, page: safePage, pages, limit });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
