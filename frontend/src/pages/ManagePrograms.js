@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 const emptyForm = { name: '', description: '', duration: '3 months', isActive: true };
 
@@ -11,6 +12,7 @@ export default function ManagePrograms() {
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchPrograms = async () => {
     setLoading(true);
@@ -58,11 +60,12 @@ export default function ManagePrograms() {
     } catch { toast.error('Failed to update'); }
   };
 
-  const handleDelete = async id => {
-    if (!window.confirm('Delete this program?')) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/programs/${id}`);
+      await api.delete(`/programs/${deleteTarget}`);
       toast.success('Program deleted');
+      setDeleteTarget(null);
       fetchPrograms();
     } catch { toast.error('Failed to delete'); }
   };
@@ -180,7 +183,7 @@ export default function ManagePrograms() {
                         >
                           {p.isActive ? '🔕' : '🔔'}
                         </button>
-                        <button className="btn-icon btn-icon-delete" onClick={() => handleDelete(p._id)} title="Delete">🗑️</button>
+                        <button className="btn-icon btn-icon-delete" onClick={() => setDeleteTarget(p._id)} title="Delete">🗑️</button>
                       </div>
                     </td>
                   </tr>
@@ -190,6 +193,15 @@ export default function ManagePrograms() {
           </div>
         )}
       </div>
+
+      {deleteTarget && (
+        <ConfirmModal
+          title="Delete Program?"
+          message="This will remove the program from the registration form. Existing applications referencing it are not affected."
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </div>
   );
 }

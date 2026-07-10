@@ -3,10 +3,20 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 
-// Register (one-time)
+// Register (one-time, protected by ADMIN_SETUP_KEY so strangers can't create their own admin)
 router.post('/register', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, setupKey } = req.body;
+    const expectedKey = process.env.ADMIN_SETUP_KEY || 'setup_me';
+    if (setupKey !== expectedKey) {
+      return res.status(403).json({ message: 'Invalid setup key' });
+    }
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
     const exists = await Admin.findOne({ username });
     if (exists) return res.status(400).json({ message: 'Admin already exists' });
     const admin = new Admin({ username, password });

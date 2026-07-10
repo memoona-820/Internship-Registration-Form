@@ -1,39 +1,42 @@
-# InternHub v2.0 — Internship Management System
+# InternHub — Internship Management System (Final Project)
 
-> **Upgraded from Week 1 Registration Portal → Full Management System**
+> MERN Stack Development — Weeks 1–3 Final Project
+> Built with React, Node.js, Express.js & MongoDB
 
-A MERN stack application for managing internship applications end-to-end — from public registration to admin review, editing, deletion, and search.
+A full-stack internship management system covering the complete lifecycle of an
+internship application — public registration, applicant self-service (view/edit/
+delete their own record), and an admin dashboard with analytics, search, filtering,
+bulk actions, and CSV export.
 
 ---
 
-## 🆕 What's New in v2.0
+## ✅ Final Requirements Checklist
 
-| Feature | v1 (Registration) | v2 (Management) |
+| Requirement | Status | Notes |
 |---|---|---|
-| Submit applications | ✅ | ✅ |
-| View all applicants | ✅ Admin only | ✅ Improved table |
-| **Edit records** | ❌ | ✅ Full edit modal |
-| **Delete records** | ✅ Basic | ✅ With confirm dialog |
-| **Search applicants** | ❌ | ✅ Live search |
-| **Filter by status/program** | ❌ | ✅ Multi-filter |
-| **Stats dashboard** | ❌ | ✅ 4 stat cards |
-| **Improved UI** | Basic | ✅ Professional design |
-| Form validation | Basic | ✅ Enhanced |
+| User Authentication | ✅ | JWT-based admin login, bcrypt password hashing, protected setup-key registration |
+| Complete CRUD Operations | ✅ | Internships, Programs, and applicant self-service all support Create/Read/Update/Delete |
+| Search & Filter | ✅ | Admin dashboard: search by name/email/CNIC/phone/institution + status/program filters + pagination |
+| Responsive UI | ✅ | Mobile hamburger nav, responsive grids, horizontally-scrollable tables, tested down to 360px |
+| Form Validation | ✅ | Client-side (inline errors) + server-side (Mongoose schema validation, regex checks) on every form |
+| Error Handling | ✅ | Global Express error handler + 404 handler, React ErrorBoundary, toast notifications on every failure path |
+| Clean Code Structure | ✅ | Feature-based folders, reusable components, consistent naming, no dead code |
 
 ---
 
 ## ✨ Features
 
-- 🌐 **Public Registration Form** — applicants submit name, father's name, email, phone, CNIC, program, qualification, institution
-- 🔐 **Admin Authentication** — JWT + bcrypt login
-- 📊 **Admin Dashboard** — stats overview (total, pending, approved, rejected)
-- ✏️ **Edit Records** — update any applicant's details via a modal
-- 🗑️ **Delete Records** — with confirmation dialog to prevent accidents
-- 🔍 **Live Search** — search by name, email, CNIC, phone, institution
-- 🎛️ **Filters** — filter by status (pending/approved/rejected) and program
-- 🔄 **Status Management** — change status inline from the table
-- 🗂️ **Manage Programs** — add, edit, activate/deactivate internship tracks
-- 📱 **Responsive Design** — works on mobile and desktop
+- 🌐 **Public Registration Form** — 3-step wizard (Personal Info → Program & Education → Review & Submit) with a progress stepper
+- 🔎 **Applicant Self-Service** ("My Record") — look up your application by email + CNIC, edit your details, or delete your own record
+- 🔐 **Admin Authentication** — JWT + bcrypt, setup-key-protected one-time registration
+- 📊 **Admin Dashboard** — live stat cards + charts (status breakdown, applications by program, 14-day trend)
+- ✏️ **Edit / Delete Records** — modal-based editing and confirmation dialogs (no native browser prompts)
+- ☑️ **Bulk Actions** — select multiple applicants and approve / reject / mark pending / delete them together
+- ⬇️ **CSV Export** — export the current filtered result set to a downloadable CSV
+- 🔍 **Live Search & Filters** — search by name/email/CNIC/phone/institution, filter by status and program, paginated results
+- 🗂️ **Manage Programs** — full CRUD for internship tracks shown on the registration form
+- 🌗 **Light / Dark Theme** — toggle with persisted preference
+- 📱 **Responsive Design** — collapsible mobile navigation, adaptive layouts down to small phone widths
 
 ---
 
@@ -41,7 +44,7 @@ A MERN stack application for managing internship applications end-to-end — fro
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, React Router v6 |
+| Frontend | React 18, React Router v6, Recharts |
 | Backend | Node.js, Express.js |
 | Database | MongoDB, Mongoose |
 | Auth | JWT, bcrypt.js |
@@ -52,38 +55,43 @@ A MERN stack application for managing internship applications end-to-end — fro
 ## 📁 Project Structure
 
 ```
-internship-management/
+Internship-Registration-Form/
 ├── backend/
 │   ├── models/
-│   │   ├── Internship.js   # Application schema (+ qualification, institution fields)
-│   │   ├── Admin.js        # Admin with bcrypt
+│   │   ├── Internship.js   # Application schema with regex/required validation
+│   │   ├── Admin.js        # Admin with bcrypt password hashing
 │   │   └── Program.js      # Internship tracks
 │   ├── routes/
-│   │   ├── internships.js  # Full CRUD + search/filter
-│   │   ├── admin.js        # Login & register
-│   │   └── programs.js     # Program management
+│   │   ├── internships.js  # Full CRUD + search/filter/pagination + bulk actions + CSV export data + stats
+│   │   ├── admin.js        # Login & setup-key-protected register
+│   │   └── programs.js     # Program CRUD
 │   ├── middleware/
-│   │   └── auth.js         # JWT middleware
+│   │   └── auth.js         # JWT verification middleware
 │   ├── .env.example
 │   ├── package.json
-│   └── server.js
+│   └── server.js           # Express app, 404 handler, centralized error handler
 └── frontend/
     ├── public/
-    │   └── index.html
+    │   └── index.html       # Theme bootstrap script (no flash of wrong theme)
     └── src/
         ├── components/
-        │   ├── Navbar.js       # Sticky nav with auth state
-        │   ├── EditModal.js    # ✨ NEW: Edit applicant modal
-        │   └── ConfirmModal.js # ✨ NEW: Delete confirmation
+        │   ├── Navbar.js         # Sticky nav with mobile hamburger menu
+        │   ├── ThemeToggle.js    # Light/dark mode toggle
+        │   ├── Stepper.js        # Reusable progress stepper (registration wizard)
+        │   ├── DashboardCharts.js# Recharts-based dashboard visualizations
+        │   ├── EditModal.js      # Edit applicant modal
+        │   ├── ConfirmModal.js   # Delete confirmation modal (used everywhere instead of window.confirm)
+        │   └── ErrorBoundary.js  # Catches unexpected render errors gracefully
         ├── pages/
-        │   ├── Home.js             # Public registration form
-        │   ├── AdminLogin.js       # Login page
-        │   ├── AdminDashboard.js   # ✨ UPGRADED: Main management
+        │   ├── Home.js             # Public 3-step registration wizard
+        │   ├── MyRecord.js         # Applicant self-service (lookup/edit/delete own record)
+        │   ├── AdminLogin.js       # Admin login page
+        │   ├── AdminDashboard.js   # Stats, charts, search/filter, pagination, bulk actions, CSV export
         │   └── ManagePrograms.js   # Program CRUD
         ├── styles/
-        │   └── main.css        # ✨ Fully redesigned
-        ├── api.js              # Axios client
-        ├── App.js
+        │   └── main.css          # CSS-variable-based theming (light + dark)
+        ├── api.js                # Axios client with auth interceptor
+        ├── App.js                # Routes + ErrorBoundary
         └── index.js
 ```
 
@@ -93,7 +101,7 @@ internship-management/
 
 ### Prerequisites
 - Node.js v18+
-- MongoDB Community Server running locally
+- MongoDB Community Server running locally (or a MongoDB Atlas connection string)
 
 ### 1. Clone & navigate
 ```bash
@@ -106,7 +114,7 @@ cd Internship-Registration-Form
 cd backend
 npm install
 cp .env.example .env
-# Edit .env and set your MONGO_URI and JWT_SECRET
+# Edit .env and set MONGO_URI, JWT_SECRET, and ADMIN_SETUP_KEY
 npm start
 ```
 
@@ -124,11 +132,11 @@ npm start
 ```
 App opens at **http://localhost:3000**
 
-### 4. Create admin account (one-time)
+### 4. Create admin account (one-time, requires your ADMIN_SETUP_KEY)
 ```bash
 curl -X POST http://localhost:5000/api/admin/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"yourpassword"}'
+  -d '{"username":"admin","password":"yourpassword","setupKey":"your_admin_setup_key"}'
 ```
 
 Then login at **http://localhost:3000/admin/login**
@@ -141,16 +149,21 @@ Then login at **http://localhost:3000/admin/login**
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | POST | /api/internships | Public | Submit application |
-| GET | /api/internships | Admin | Get all (supports `?search=&status=&program=`) |
-| GET | /api/internships/:id | Admin | Get single applicant |
-| PUT | /api/internships/:id | Admin | **NEW** Full update/edit |
+| GET | /api/internships | Admin | Paginated list — supports `?search=&status=&program=&page=&limit=&exportAll=` |
+| GET | /api/internships/stats/summary | Admin | Dashboard stat counts + by-program + trend data |
+| POST | /api/internships/lookup | Public | Applicant looks up their own record by email + CNIC |
+| PUT | /api/internships/my/:id | Public | Applicant updates their own record |
+| DELETE | /api/internships/my/:id | Public | Applicant deletes their own record |
+| PUT | /api/internships/:id | Admin | Full update/edit |
 | PATCH | /api/internships/:id/status | Admin | Update status only |
-| DELETE | /api/internships/:id | Admin | Delete record |
+| PATCH | /api/internships/bulk/status | Admin | Bulk status update for selected IDs |
+| POST | /api/internships/bulk/delete | Admin | Bulk delete selected IDs |
+| DELETE | /api/internships/:id | Admin | Delete a single record |
 
 ### Admin
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | /api/admin/register | Public | One-time admin creation |
+| POST | /api/admin/register | Setup key | One-time admin creation |
 | POST | /api/admin/login | Public | Get JWT token |
 
 ### Programs
@@ -168,14 +181,15 @@ Then login at **http://localhost:3000/admin/login**
 
 | Page | Description |
 |---|---|
-| `/` | Public registration form with validation |
+| `/` | 3-step public registration wizard with validation |
+| `/my-record` | Applicant self-service — view, edit, or delete own application |
 | `/admin/login` | Admin login page |
-| `/admin/dashboard` | Stats + searchable applicant table with edit/delete |
+| `/admin/dashboard` | Stats, charts, searchable/filterable/paginated applicant table, bulk actions, CSV export |
 | `/admin/programs` | Program management |
 
 ---
 
 ## 👩‍💻 Developer
 
-**Memoona** — Internship Task Week 2 Submission  
-Built with ❤️ using MERN Stack
+**Memoona** — MERN Stack Development Internship, Final Project
+Built with ❤️ using the MERN Stack

@@ -111,6 +111,25 @@ h1, h2, h3, h4, .stat-value, .stepper-circle, .logo-text {
 
 .navbar-links { display: flex; gap: 8px; align-items: center; }
 
+.navbar-user {
+  color: rgba(255,255,255,0.4);
+  font-size: 0.85rem;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.navbar-toggle {
+  display: none;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: white;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
 .nav-link {
   color: rgba(255,255,255,0.75);
   text-decoration: none;
@@ -649,6 +668,43 @@ tbody td { padding: 13px 14px; font-size: 0.9rem; vertical-align: middle; }
   .stepper-label { display: none; }
   .search-box { min-width: unset; }
   .navbar { padding: 0 1rem; }
+
+  .navbar-toggle { display: inline-flex; align-items: center; justify-content: center; }
+
+  .navbar-links {
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: var(--dark2);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 0.75rem 1rem;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  .navbar-links.open {
+    max-height: 400px;
+    opacity: 1;
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-links .nav-link,
+  .navbar-links .btn-logout,
+  .navbar-links .navbar-user {
+    width: 100%;
+    text-align: left;
+  }
+
+  .navbar-links .theme-toggle {
+    align-self: flex-start;
+    margin-top: 4px;
+  }
 }
 
 /* ── Stepper (multi-step registration) ── */

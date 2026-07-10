@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../api';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 const QUALIFICATIONS = ['Matriculation', 'Intermediate', "Bachelor's", "Master's", 'PhD'];
 const DEFAULT_PROGRAMS = ['Web Development', 'Mobile Development', 'Data Science', 'UI/UX Design', 'DevOps', 'Cybersecurity'];
@@ -11,7 +12,12 @@ export default function MyRecord() {
   const [record, setRecord] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [loading, setLoading] = useState(false);
-  const [programs] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    api.get('/programs').then(res => setPrograms(res.data)).catch(() => {});
+  }, []);
 
   // Step 1: Find record
   const handleLookup = async e => {
@@ -57,12 +63,12 @@ export default function MyRecord() {
 
   // Step 3: Delete record
   const handleDelete = async () => {
-    if (!window.confirm('Kya aap apna record permanently delete karna chahte hain?')) return;
     setLoading(true);
     try {
       await api.delete(`/internships/my/${record._id}`, {
         data: { email: record.email, cnic: record.cnic }
       });
+      setConfirmDelete(false);
       setStep('deleted');
       toast.success('Record delete ho gaya');
     } catch (err) {
@@ -194,10 +200,19 @@ export default function MyRecord() {
 
           <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button className="btn btn-primary" onClick={() => setStep('edit')}>✏️ Edit Record</button>
-            <button className="btn btn-danger" onClick={handleDelete} disabled={loading}>🗑️ Delete Record</button>
+            <button className="btn btn-danger" onClick={() => setConfirmDelete(true)} disabled={loading}>🗑️ Delete Record</button>
             <button className="btn btn-secondary" onClick={() => setStep('lookup')}>← Back</button>
           </div>
         </div>
+
+        {confirmDelete && (
+          <ConfirmModal
+            title="Delete Your Application?"
+            message="This action cannot be undone. Your internship application will be permanently removed."
+            onConfirm={handleDelete}
+            onCancel={() => setConfirmDelete(false)}
+          />
+        )}
       </div>
     );
   }

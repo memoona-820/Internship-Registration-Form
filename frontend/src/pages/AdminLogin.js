@@ -70,7 +70,7 @@ export default function AdminLogin() {
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-          First time? Create admin via API:<br />
+          First time? Create admin via API (needs your <code>ADMIN_SETUP_KEY</code> from <code>.env</code>):<br />
           <code style={{ background: 'var(--surface-alt)', padding: '2px 6px', borderRadius: 4, fontSize: '0.78rem' }}>
             POST /api/admin/register
           </code>

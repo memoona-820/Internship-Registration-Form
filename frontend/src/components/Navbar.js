@@ -1,12 +1,17 @@
-import React from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem('token');
   const user = localStorage.getItem('adminUser');
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the mobile menu automatically whenever the route changes
+  React.useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -22,7 +27,16 @@ export default function Navbar() {
         InternHub
       </Link>
 
-      <div className="navbar-links">
+      <button
+        className="navbar-toggle"
+        onClick={() => setMenuOpen(o => !o)}
+        aria-label="Toggle navigation menu"
+        aria-expanded={menuOpen}
+      >
+        {menuOpen ? '✕' : '☰'}
+      </button>
+
+      <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
         <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} end>
           Register
         </NavLink>
@@ -38,9 +52,7 @@ export default function Navbar() {
             <NavLink to="/admin/programs" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               Programs
             </NavLink>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', padding: '0 4px' }}>
-              👤 {user}
-            </span>
+            <span className="navbar-user">👤 {user}</span>
             <button className="btn-logout" onClick={handleLogout}>Logout</button>
           </>
         ) : (
